@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { TaskService } from 'src/app/core/services/task.service';
 
 @Component({
   selector: 'app-task-view',
@@ -7,4 +8,13 @@ import { Component } from '@angular/core';
 })
 export class TaskViewComponent {
 
+  constructor(private taskService: TaskService) {
+
+  }
+
+  createNewList() {
+    this.taskService.createList('Test title').subscribe((response: any) => {
+      console.log(response);
+    });
+  }
 }
