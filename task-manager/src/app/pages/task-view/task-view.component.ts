@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { TaskService } from 'src/app/core/services/task.service';
+import { List } from 'src/app/models/list.model';
+import { Task } from 'src/app/models/tasks.model';
 
 @Component({
   selector: 'app-task-view',
@@ -26,6 +28,12 @@ export class TaskViewComponent {
 
     this.taskService.getList().subscribe((lists) => {
       this.lists = lists;
+    })
+  }
+
+  onTaskClick(task: Task) {
+    this.taskService.complete(task).subscribe(()=>{
+      task.completed = !task.completed;
     })
   }
 
