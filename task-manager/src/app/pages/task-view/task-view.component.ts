@@ -18,7 +18,6 @@ export class TaskViewComponent {
   ngOnInit() {
     this.route.params.subscribe(
       (params: Params)=>{
-        console.log(params);
         this.taskService.getTasks(params['listId']).subscribe((tasks)=>{
           this.tasks = tasks;
         })

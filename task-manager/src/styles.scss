@@ -22,3 +22,26 @@ body {
 html, body { 
   height: 100%;
 }
+
+.centered-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.modal-box {
+  width: 100%;
+  max-width: 580px;
+  min-height: 200px;
+  background: white;
+  border-radius: 5px;
+  padding: 35px;
+  .title {
+    margin: 0 0 30px;
+  }
+  .colored-title {
+    color: $color-task-background;
+  }
+}
