@@ -1,0 +1,60 @@
+@import '../../../styles/constants.scss';
+
+.login-box {
+  width: 100%;
+  max-width: 500px;
+  min-height: 250px;
+  background: white;
+  border-radius: 5px;
+  padding: 35px;
+  .title {
+    color: $color-task-background;
+    margin-top: 0;
+    font-size: 4.2rem;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+
+  input {
+    flex: 1;
+    width: 100%;
+    border: 1px solid rgb(82, 82, 82, 0.5);
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 1.8rem;
+    background-color: rgb(237, 237, 221, 0.5);
+    margin-bottom: 20px;
+  }
+
+  label {
+    margin-bottom: 5px;
+    margin-left: 7px;
+  }
+}
+
+.input:focus {
+  color: #212529;
+  background-color: #fff;
+  border-color: #bdbdbd;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(166, 0, 255, 0.5);
+}
+
+.button {
+  float: right;
+  padding: 10px;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  background-color: $color-task-background;
+  font-weight: 700;
+  font-size: 1.8rem;
+  color: $color-text;
+
+  &:hover {
+    background-color: rgb(190, 190, 190); 
+  }
+}
