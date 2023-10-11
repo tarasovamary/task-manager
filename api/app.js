@@ -5,9 +5,17 @@ const {mongoose} = require('./db/mongoose');
 
 const bodyParser = require('body-parser');
 
-const { List, Task } = require('./db/models');
+const { List, Task, User } = require('./db/models');
 
 app.use(bodyParser.json());
+
+// CORS
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, HEAD, OPTIONS, PUT, PATCH, DELETE");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 
 /**
  * GET /lists
@@ -105,7 +113,7 @@ app.patch('/lists/:listId/tasks/:taskId', (req, res) => {
   }, {
     $set: req.body
   }).then(() => {
-    res.sendStatus(200)
+    res.send({message: 'Updated successfully'})
   });
 });
 
@@ -122,6 +130,83 @@ app.delete('/lists/:listId/tasks/:taskId', (req, res) => {
     res.send(removedTaskDoc)
   });
 });
+
+/* USER ROUTES */
+
+/**
+ * POST /users
+ * Sign up
+ */
+
+ app.post('/users', (req, res) => {
+  // User sign up
+
+  let body = req.body;
+  let newUser = new User(body);
+
+  newUser.save().then(() => {
+      return newUser.createSession();
+  }).then((refreshToken) => {
+      // Session created successfully - refreshToken returned.
+      // now we geneate an access auth token for the user
+
+      return newUser.generateAccessAuthToken().then((accessToken) => {
+          // access auth token generated successfully, now we return an object containing the auth tokens
+          return { accessToken, refreshToken }
+      });
+  }).then((authTokens) => {
+      // Now we construct and send the response to the user with their auth tokens in the header and the user object in the body
+      res
+          .header('x-refresh-token', authTokens.refreshToken)
+          .header('x-access-token', authTokens.accessToken)
+          .send(newUser);
+  }).catch((e) => {
+      res.status(400).send(e);
+  })
+})
+
+/**
+ * POST /users/login
+ * Login
+ */
+
+ app.post('/users/login', (req, res) => {
+  let email = req.body.email;
+  let password = req.body.password;
+
+  User.findByCredentials(email, password).then((user) => {
+      return user.createSession().then((refreshToken) => {
+          // Session created successfully - refreshToken returned.
+          // now we geneate an access auth token for the user
+
+          return user.generateAccessAuthToken().then((accessToken) => {
+              // access auth token generated successfully, now we return an object containing the auth tokens
+              return { accessToken, refreshToken }
+          });
+      }).then((authTokens) => {
+          // Now we construct and send the response to the user with their auth tokens in the header and the user object in the body
+          res
+              .header('x-refresh-token', authTokens.refreshToken)
+              .header('x-access-token', authTokens.accessToken)
+              .send(user);
+      })
+  }).catch((e) => {
+      res.status(400).send(e);
+  });
+})
+
+/**
+ * GET /users/me/access-token
+ * Purpose: generates and returns an access token
+ */
+ app.get('/users/me/access-token', verifySession, (req, res) => {
+  // we know that the user/caller is authenticated and we have the user_id and user object available to us
+  req.userObject.generateAccessAuthToken().then((accessToken) => {
+      res.header('x-access-token', accessToken).send({ accessToken });
+  }).catch((e) => {
+      res.status(400).send(e);
+  });
+})
 
 app.listen(3000, () => {
   console.log('Server is listening on port 3000');
