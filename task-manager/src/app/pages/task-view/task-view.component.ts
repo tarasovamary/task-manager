@@ -20,9 +20,14 @@ export class TaskViewComponent {
   ngOnInit() {
     this.route.params.subscribe(
       (params: Params)=>{
-        this.taskService.getTasks(params['listId']).subscribe((tasks)=>{
-          this.tasks = tasks;
-        })
+        if(params['listId']) {
+          this.taskService.getTasks(params['listId']).subscribe((tasks)=>{
+            this.tasks = tasks;
+          })
+        } else {
+          this.tasks = undefined;
+        }
+       
       }
     )
 
