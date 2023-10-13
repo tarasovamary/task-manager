@@ -7,6 +7,8 @@ const bodyParser = require('body-parser');
 
 const { List, Task, User } = require('./db/models');
 
+const jwt = require('jsonwebtoken');
+
 /* MIDDLEWARE*/
 
 app.use(bodyParser.json());
@@ -16,8 +18,26 @@ app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, HEAD, OPTIONS, PUT, PATCH, DELETE");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  
+  res.header(
+    'Access-Control-Expose-Headers',
+    'x-access-token, x-refresh-token'
+);
   next();
 });
+
+let authenticate = (req, res, next) => {
+  let token = req.header('x-access-token');
+
+  jwt.verify(token, User.getJWTSecret(), (err, decoded) => {
+    if(err) {
+      res.status(401).send(err);
+    } else {
+      req.user_id = decoded._id;
+      next();
+    }
+  })
+}
 
 // Verify refresh token Middleware
 let verifySession = (req, res, next) => {
@@ -77,8 +97,10 @@ let verifySession = (req, res, next) => {
  * Get all lists
  */
 
-app.get('/lists', (req, res) => {
-  List.find({}).then((lists)=>{
+app.get('/lists', authenticate, (req, res) => {
+  List.find({
+    _userId: req.user_id
+  }).then((lists)=>{
     res.send(lists);
   }).catch((e)=> {
     res.send(e);
@@ -90,11 +112,12 @@ app.get('/lists', (req, res) => {
  * Create a list
  */
 
-app.post('/lists', (req, res) => {
+app.post('/lists', authenticate, (req, res) => {
   let title = req.body.title;
 
   let newList = new List({
-    title
+    title,
+    _userId: req.user_id
   });
 
   newList.save().then((listDoc)=>{
@@ -107,8 +130,8 @@ app.post('/lists', (req, res) => {
  * Update a specified list
  */
 
-app.patch('/lists/:id', (req, res) => {
-  List.findOneAndUpdate({_id: req.params.id},{
+app.patch('/lists/:id', authenticate, (req, res) => {
+  List.findOneAndUpdate({_id: req.params.id, _userId: req.user_id},{
     $set: req.body
   }).then(()=>{
     res.sendStatus(200)
@@ -120,11 +143,15 @@ app.patch('/lists/:id', (req, res) => {
  * Delete a list
  */
 
-app.delete('/lists/:id', (req, res) => {
+app.delete('/lists/:id', authenticate, (req, res) => {
   List.findOneAndRemove({
-    _id: req.params.id
+    _id: req.params.id,
+    _userId: req.user_id
   }).then((removeListDoc)=>{
     res.send(removeListDoc)
+
+    //delete all the tasks are in the deleted list
+    deleteTaskFromList(removeListDoc._id);
   });
 });
 
@@ -133,7 +160,7 @@ app.delete('/lists/:id', (req, res) => {
  * Get all tasks in a specific list
  */
 
-app.get('/lists/:listId/tasks', (req, res) => {
+app.get('/lists/:listId/tasks', authenticate, (req, res) => {
   Task.find({
     _listId: req.params.listId
   }).then((tasks) => {
@@ -146,14 +173,30 @@ app.get('/lists/:listId/tasks', (req, res) => {
  * Create a new task in specific list
  */
 
-app.post('/lists/:listId/tasks', (req, res) => {
-  let newTask = new Task ({
-    title: req.body.title,
-    _listId: req.params.listId,
+app.post('/lists/:listId/tasks', authenticate, (req, res) => {
+  List.findOne({
+    _id: req.params.listId,
+    _userId: req.user_id
+  }).then((list) => {
+    if(list) {
+      //list object with the specified conditions was found
+      // therefore the currently authenticated user can create a new list
+      return true;
+    }
+    return false;
+  }).then((canCreateTask) => {
+    if(canCreateTask) {
+      let newTask = new Task ({
+        title: req.body.title,
+        _listId: req.params.listId,
+      })
+      newTask.save().then((newTaskDoc) => {
+        res.send(newTaskDoc)
+      })
+    } else {
+      res.sendStatus(404);
+    }
   })
-  newTask.save().then((newTaskDoc) => {
-    res.send(newTaskDoc)
-  });
 });
 
 /**
@@ -161,15 +204,32 @@ app.post('/lists/:listId/tasks', (req, res) => {
  * Update an existing task
  */
 
-app.patch('/lists/:listId/tasks/:taskId', (req, res) => {
-  Task.findOneAndUpdate({
-    _id: req.params.taskId,
-    _listId: req.params.listId
-  }, {
-    $set: req.body
-  }).then(() => {
-    res.send({message: 'Updated successfully'})
-  });
+app.patch('/lists/:listId/tasks/:taskId', authenticate, (req, res) => {
+  List.findOne({
+    _id: req.params.listId,
+    _userId: req.user_id
+  }).then((list) => {
+    if(list) {
+      //list object with the specified conditions was found
+      // therefore the currently authenticated user can make updates to this list
+      return true;
+    }
+    return false;
+  }).then((canUpdateTask) => {
+    if(canUpdateTask) {
+      //the currently authenticated user can update tasks
+      Task.findOneAndUpdate({
+        _id: req.params.taskId,
+        _listId: req.params.listId
+      }, {
+        $set: req.body
+      }).then(() => {
+        res.send({message: 'Updated successfully'})
+      })
+    } else {
+      res.sendStatus(404);
+    }
+  })
 });
 
 /**
@@ -177,13 +237,29 @@ app.patch('/lists/:listId/tasks/:taskId', (req, res) => {
  * Delete a task
  */
 
-app.delete('/lists/:listId/tasks/:taskId', (req, res) => {
-  Task.findOneAndRemove({
-    _id: req.params.taskId,
-    _listId: req.params.listId
-  }).then((removedTaskDoc)=>{
-    res.send(removedTaskDoc)
-  });
+app.delete('/lists/:listId/tasks/:taskId', authenticate, (req, res) => {
+  List.findOne({
+    _id: req.params.listId,
+    _userId: req.user_id
+  }).then((list) => {
+    if(list) {
+      //list object with the specified conditions was found
+      // therefore the currently authenticated user can make updates to this list
+      return true;
+    }
+    return false;
+  }).then((canDeleteTask) => {
+    if(canDeleteTask) {
+      Task.findOneAndRemove({
+        _id: req.params.taskId,
+        _listId: req.params.listId
+      }).then((removedTaskDoc)=>{
+        res.send(removedTaskDoc)
+      })
+    } else {
+      res.sendStatus(404);
+    }
+  })
 });
 
 /* USER ROUTES */
@@ -262,6 +338,16 @@ app.get('/users/me/access-token', verifySession, (req, res) => {
       res.status(400).send(e);
   });
 })
+
+/* HELPER METHODS */
+
+let deleteTaskFromList = (_listId) => {
+  Task.deleteMany({
+    _listId
+  }).then(() => {
+    console.log('Task from ' + _listId + ' were deleted')
+  })
+}
 
 
 app.listen(3000, () => {
