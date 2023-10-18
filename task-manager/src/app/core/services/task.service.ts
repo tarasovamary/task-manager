@@ -13,6 +13,14 @@ export class TaskService {
     return this.webReqService.post('lists', {title});
   }
 
+  updateList(listId: string, title: string) {
+    return this.webReqService.patch(`lists/${listId}`, {title});
+  }
+
+  deleteList(listId: string) {
+    return this.webReqService.delete(`lists/${listId}`);
+  }
+
   getList() {
     return this.webReqService.get('lists');
   }
@@ -23,6 +31,14 @@ export class TaskService {
 
   createTasks(title: string, listId: string) {
     return this.webReqService.post(`lists/${listId}/tasks`, {title});
+  }
+
+  updateTask(listId: string, taskId: string, title: string) {
+    return this.webReqService.patch(`lists/${listId}/tasks/${taskId}`, {title});
+  }
+
+  deleteTask(listId: string, taskId: string) {
+    return this.webReqService.delete(`lists/${listId}/tasks/${taskId}`);
   }
 
   complete(task: Task) {

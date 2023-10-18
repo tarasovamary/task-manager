@@ -19,14 +19,67 @@
     </div>
     <div class="task-list-container">
       <div *ngIf="tasks">
-        <h1 class="title">
-          Tasks
-        </h1>
+
+        <div class="top-bar">
+          <h1 class="title">
+            Tasks
+          </h1>
+          <div class="settings-menu">
+            <button mat-icon-button
+                    [matMenuTriggerFor]="menu"
+                    aria-label="Settings menu">
+              <mat-icon>
+                settings
+              </mat-icon>
+            </button>  
+            <mat-menu #menu="matMenu"
+                      xPosition = "before">
+              <button mat-menu-item>
+                <mat-icon>
+                  update
+                </mat-icon>
+                
+                  <span [routerLink]="['/edit-list', selectedListId]">
+                    Edit
+                  </span>
+                
+              </button>
+  
+              <button mat-menu-item
+                      (click)="onDeleteListClick()">
+                <mat-icon>
+                  delete
+                </mat-icon>
+                <span>
+                  Delete
+                </span>
+              </button>
+            </mat-menu>
+          </div>
+        </div>
+
         <div class="task"
             *ngFor="let task of tasks"
             (click) = onTaskClick(task)
             [ngClass]="{'completed': task.completed}">
-          <p>{{task.title}}</p>
+            <div class="task-text">
+              <p>{{task.title}}</p>
+            </div>
+            <div class="task-buttons">
+              
+                <button mat-mini-fab color="accent" aria-label="Edit button"
+                [routerLink]="['/lists', selectedListId, 'edit-task', task._id]">
+                  <mat-icon>edit</mat-icon>
+                </button>
+
+                <button mat-mini-fab color="primary" aria-label="Delete button"
+                        (click)="onTaskDeleteClick(task._id)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              
+            </div>
+           
+          
         </div>
 
         <h3 class="empty-state-text"

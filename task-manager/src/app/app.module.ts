@@ -10,6 +10,12 @@ import { NewTaskComponent } from './pages/new-task/new-task.component';
 import { LoginPageComponent } from './pages/login-page/login-page.component';
 import { WebRequestInterceptor } from './core/interceptors/web-request.interceptor';
 import { SignupPageComponent } from './pages/signup-page/signup-page.component';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatIconModule } from '@angular/material/icon';
+import {MatButtonModule} from '@angular/material/button';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { EditListComponent } from './pages/edit-list/edit-list.component';
+import { EditTaskComponent } from './pages/edit-task/edit-task.component';
 
 @NgModule({
   declarations: [
@@ -18,12 +24,18 @@ import { SignupPageComponent } from './pages/signup-page/signup-page.component';
     NewListComponent,
     NewTaskComponent,
     LoginPageComponent,
-    SignupPageComponent
+    SignupPageComponent,
+    EditListComponent,
+    EditTaskComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
-    HttpClientModule
+    HttpClientModule,
+    MatMenuModule,
+    MatIconModule,
+    MatButtonModule,
+    BrowserAnimationsModule
   ],
   providers: [
     {
